@@ -1,0 +1,37 @@
+#@retail@
+## Interface: 80000
+#@end-retail@
+#@non-retail@
+# ## Interface: 11303
+#@end-non-retail@
+## Version: @project-version@
+
+## Title: WhoTrades
+## Notes: Trade frame enhancement for raid trade |cff00b3ff(Classic compatible)|r by LoneWanderer-GH
+
+## Author: LoneWanderer-GH
+
+## X-Curse-Project-ID: TBD
+
+## SavedVariables: WhoTradesDB
+## SavedVariablesPerCharacter: WhoTradesCharDB
+
+
+## LoadManagers: AddonLoader
+## X-LoadOn-Always: delayed
+
+# packaged on @project-date-integer@
+
+embeds.xml
+Libs\LibWho-2.0\LibWho-2.0.lua
+
+core.lua
+
+
+
+
+
+
+
+
+
