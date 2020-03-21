@@ -23,7 +23,7 @@
 # packaged on @project-date-integer@
 
 embeds.xml
-Libs\LibWho-2.0\LibWho-2.0.lua
+# Libs\LibWho-2.0\LibWho-2.0.lua
 
 core.lua
 

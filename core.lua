@@ -9,18 +9,8 @@ local CreateFrame = CreateFrame
 local _, UnitClass, UnitName, UnitLevel, UnitIsPlayer = UnitClassBase, UnitClass, UnitName, UnitLevel, UnitIsPlayer
 local _, GetGuildInfo = UnitIsInMyGuild, GetGuildInfo
 local UnitInParty, _, UnitInRaid, _, GetRaidRosterInfo = UnitInParty, UnitInOtherParty, UnitInRaid, IsInRaid, GetRaidRosterInfo
-local WARRIOR = "WARRIOR"
-local MAGE = "MAGE"
-local ROGUE = "ROGUE"
-local DRUID = "DRUID"
-local HUNTER = "HUNTER"
-local SHAMAN = "SHAMAN"
-local PRIEST = "PRIEST"
-local WARLOCK = "WARLOCK"
-local PALADIN = "PALADIN"
--- local WhoTradesDB = nil
+local WARRIOR, MAGE, ROGUE, DRUID, HUNTER, SHAMAN, PRIEST, WARLOCK, PALADIN = "WARRIOR", "MAGE", "ROGUE", "DRUID", "HUNTER", "SHAMAN", "PRIEST", "WARLOCK", "PALADIN"
 
--- local class_icons_texture_path = "Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes"
 local texture_path_index = {
     [WARRIOR] = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:0:64:0:64|t",
     [MAGE] = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:64:128:0:64|t",
@@ -33,6 +23,9 @@ local texture_path_index = {
     [PALADIN] = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:0:64:128:196|t",
 
 }
+
+local DEFAULT_GUILD_TEXT = "(no guild info)"
+local DEFAULT_GROUP_TEXT = "(no grouping info)"
 
 function WhoTrades:OnEnable()
     -- Called when the addon is enabled
@@ -111,25 +104,30 @@ end
 
 function WhoTrades:get_player_infos()
     self:Print("get_player_infos")
+    local data_found = false
     if self.trading_with then
         self:Print("get_player_infos - Trying to fetch from group or raid")
         local is_in_player_raid = UnitInRaid(self.trading_with)
         local is_in_player_group = UnitInParty(self.trading_with)
-        self.trade_assistant_frame.target_button:Hide()
+        self.button_target_trader:Hide()
         if is_in_player_raid then
             self:Print("get_player_infos - in raid !")
             self:get_player_infos_from_raid()
+            data_found = true
         elseif is_in_player_group then
             self:Print("get_player_infos - in group !")
             self:get_player_infos_from_group()
+            data_found = true
         else
             self:Print("get_player_infos - not in raid nor group, trying from target")
-            self.trade_assistant_frame.target_button:Show()
+            self.button_target_trader:Show()
             if UnitIsPlayer("target") and UnitName("target") == self.trading_with then
                 self:Print("get_player_infos - got it from target")
                 self:get_player_infos_from_target()
-                self.trade_assistant_frame.target_button:Hide()
+                self.button_target_trader:Hide()
+                data_found = true
             else
+                data_found = false
                 self:RegisterEvent("PLAYER_TARGET_CHANGED")
                 self:Print(format("Trader (%s) is not in target, group or raid. Cannot fetch info. Please try to target it manually", self.trading_with))
             end
@@ -137,6 +135,7 @@ function WhoTrades:get_player_infos()
     else
         self:Print("Trader is nil ????")
     end
+    return data_found
 end
 
 local function build_class_color_str(class_name)
@@ -170,9 +169,9 @@ end--]]
 local function build_guild_str(guild_name, guild_rank_text, guild_rank_nb)
     local guild_str = "no guild info"
     if guild_name then
-        guild_str = format(" %s [%s, %d]", guild_name, guild_rank_text, guild_rank_nb)
+        guild_str = format("%s [%s, %d]", guild_name, guild_rank_text, guild_rank_nb)
     end
-    return guild_str
+    return format("|cFF64FB64%s|r", guild_str)
 end
 
 local function build_grouping_status_str(group_kind, group_number)
@@ -204,28 +203,37 @@ end
 
 function WhoTrades:OnShowTradeFrame()
     self:Print("OnShowTradeFrame")
-    if self.trade_assistant_frame then
+    if self.simple_group_trade_assistant then
         self:Print("OnShowTradeFrame - addon frame exists")
+
         if self.trading_with then
             --
             local mtext = format("/target %s", self.trading_with) -- \n/WT_OnShowTradeFrame
-            self.trade_assistant_frame.target_button:SetAttribute("macrotext", mtext)
+            self.button_target_trader:SetAttribute("macrotext", mtext)
             --
-            self:get_player_infos()
+            local full_trader_str = self.trading_with
+            local guild_str = DEFAULT_GUILD_TEXT
+            local grouping_str = DEFAULT_GROUP_TEXT
+            local found = self:get_player_infos()
             --
-            local class_color_str = build_class_color_str(self.trader_class_name)
-            local level_str = build_level_str(self.trader_level)
-            local name_str = build_name_str(self.trading_with, class_color_str)
-            local texture_path_str = texture_path_index[self.trader_class_name] or "shit !"-- build_class_texture_path(self.trader_class_name)
-            local full_trader_str = format("%s %s %s %s", level_str, texture_path_str, name_str, self.trader_class_name)
-            local guild_str = build_guild_str(self.trader_guild_name, self.trader_guild_rank_text, self.trader_guild_rank_nb)
-            local grouping_str = build_grouping_status_str(self.trader_group_kind, self.trader_group_number)
+            if found then
+                local class_color_str = build_class_color_str(self.trader_class_name)
+                local level_str = build_level_str(self.trader_level)
+                local name_str = build_name_str(self.trading_with, class_color_str)
+                local texture_path_str = texture_path_index[self.trader_class_name] or "shit !"-- build_class_texture_path(self.trader_class_name)
+                full_trader_str = format("%s %s %s %s", level_str, texture_path_str, name_str, self.trader_class_name)
+                guild_str = build_guild_str(self.trader_guild_name, self.trader_guild_rank_text, self.trader_guild_rank_nb)
+                grouping_str = build_grouping_status_str(self.trader_group_kind, self.trader_group_number)
+            end
+            self.simple_group_trade_assistant.label_name_informations.fs:SetText(full_trader_str)
+            self.simple_group_trade_assistant.label_guild_informations.fs:SetText(guild_str)
+            self.simple_group_trade_assistant.label_group_informations.fs:SetText(grouping_str)
+
             --
-            self.trade_assistant_frame.name:SetText(full_trader_str)
-            self.trade_assistant_frame.guild:SetText(guild_str)
-            self.trade_assistant_frame.group_label:SetText(grouping_str)
-            --
-            self.trade_assistant_frame:Show()
+            self.simple_group_trade_assistant.label_name_informations:Show()
+            self.simple_group_trade_assistant.label_guild_informations:Show()
+            self.simple_group_trade_assistant.label_group_informations:Show()
+            self.simple_group_trade_assistant:Show()
         else
             self:Print("OnShowTradeFrame - Trading with undefined ?! (recipient text is: "..TradeFrameRecipientNameText:GetText() .. ")")
         end
@@ -236,8 +244,32 @@ end
 
 function WhoTrades:OnHideTradeFrame()
     self:Print("OnHideTradeFrame")
-    if self.trade_assistant_frame then
-        self.trade_assistant_frame:Hide()
+    if self.simple_group_trade_assistant then
+        --self.simple_group_trade_assistant:Hide()
+        self.button_target_trader:Hide()
+        self.simple_group_trade_assistant:Hide()
+        self.simple_group_trade_assistant.label_name_informations:Hide()
+        self.simple_group_trade_assistant.label_guild_informations:Hide()
+        self.simple_group_trade_assistant.label_group_informations:Hide()
+
+
+
+
+        --self.simple_group_trade_assistant.label_name_informations:Release()
+        --self.simple_group_trade_assistant.label_guild_informations:Release()
+        --self.simple_group_trade_assistant.label_group_informations:Release()
+
+        -- release to ACGUI frame pool
+        --self.simple_group_trade_assistant:ReleaseChildren()
+
+        --self.simple_group_trade_assistant:Release()
+
+        --[[self.simple_group_trade_assistant.label_name_informations = nil
+        self.simple_group_trade_assistant.label_guild_informations = nil
+        self.simple_group_trade_assistant.label_group_informations = nil--]]
+
+        --self.simple_group_trade_assistant = nil
+        --self.simple_group_trade_assistant.frameShown = false
     else
         if self.enabled then
             self:Print("OnHideTradeFrame - No assistant frame ?!")
@@ -251,67 +283,111 @@ function WhoTrades:build_UI()
     self:Print("build_UI")
     if TradeFrame then
         self:Print("build_UI - WOW TradeFrame exists")
-        if not self.trade_assistant_frame then
+        if not self.simple_group_trade_assistant then
             self:Print("build_UI - trade_assistant_frame does not exists, build it")
 
-            self.trade_assistant_frame = AceGUI:Create("Frame")
-            self.trade_assistant_frame:SetTitle("WhoTrades")
-            self.trade_assistant_frame:SetLayout("Flow")
-            self.trade_assistant_frame:SetPoint("TOPLEFT", TradeFrame, "TOPRIGHT")
-            self.trade_assistant_frame:SetWidth(180)
-            self.trade_assistant_frame:SetHeight(TradeFrame:GetHeight())
+            --self.simple_group_trade_assistant = AceGUI:Create("SimpleGroup")
+            self.simple_group_trade_assistant = CreateFrame("frame", "WhoTrades", TradeFrame)
+            -- self.simple_group_trade_assistant:SetLayout("Flow")
+            --self.simple_group_trade_assistant:SetPoint("TOPLEFT", TradeFrame, "BOTTOMLEFT")
+            --self.simple_group_trade_assistant:SetPoint("TOP", TradeFrameRecipientNameText, "BOTTOM", 0, -10)
+            --self.simple_group_trade_assistant:SetPoint("TOPRIGHT", TradeFrameTitleBg, "BOTTOMRIGHT", 0, 0)
+            self.simple_group_trade_assistant:SetPoint("TOPRIGHT", TradeFrameCloseButton, "BOTTOMRIGHT", 2, 6)
+            self.simple_group_trade_assistant:SetWidth(TradeFrameRecipientNameText:GetWidth() * 2)
+            self.simple_group_trade_assistant:SetHeight(TradeRecipientItem1ItemButton:GetHeight() + 5)
 
-            self.trade_assistant_frame.name_group = AceGUI:Create("InlineGroup")
-            self.trade_assistant_frame.name_group:SetLayout("Flow")
-            self.trade_assistant_frame.name_group:SetAutoAdjustHeight(true)
-            self.trade_assistant_frame.name = AceGUI:Create("Label")
-            --self.trade_assistant_frame.name:SetTexT0
+            --self.simple_group_trade_assistant.label_name_informations = AceGUI:Create("Label")
+            --self.simple_group_trade_assistant.label_guild_informations = AceGUI:Create("Label")
+            --self.simple_group_trade_assistant.label_group_informations = AceGUI:Create("Label")
+
+            self.simple_group_trade_assistant.label_name_informations = CreateFrame("Button", "WhoTrades_name", self.simple_group_trade_assistant)
+            self.simple_group_trade_assistant.label_guild_informations = CreateFrame("Button", "WhoTrades_guild", self.simple_group_trade_assistant)
+            self.simple_group_trade_assistant.label_group_informations = CreateFrame("Button", "WhoTrades_group", self.simple_group_trade_assistant)
+
+            self.simple_group_trade_assistant.label_name_informations:SetPoint("TOPRIGHT", TradeFrameCloseButton, "BOTTOMRIGHT", 0,0)
+            self.simple_group_trade_assistant.label_name_informations:SetWidth(TradeFrameRecipientNameText:GetWidth() * 2)
+            self.simple_group_trade_assistant.label_name_informations:SetHeight(TradeFrameRecipientNameText:GetHeight())
+
+            self.simple_group_trade_assistant.label_guild_informations:SetPoint("TOP", self.simple_group_trade_assistant.label_name_informations, "BOTTOM", 0, 0)
+            self.simple_group_trade_assistant.label_guild_informations:SetWidth(self.simple_group_trade_assistant.label_name_informations:GetWidth())
+            self.simple_group_trade_assistant.label_guild_informations:SetHeight(self.simple_group_trade_assistant.label_name_informations:GetHeight())
+
+            self.simple_group_trade_assistant.label_group_informations:SetPoint("TOP", self.simple_group_trade_assistant.label_guild_informations, "BOTTOM", 0, 0)
+            self.simple_group_trade_assistant.label_group_informations:SetWidth(self.simple_group_trade_assistant.label_name_informations:GetWidth())
+            self.simple_group_trade_assistant.label_group_informations:SetHeight(self.simple_group_trade_assistant.label_name_informations:GetHeight())
+
+
+            --[[local t = {[self.simple_group_trade_assistant.label_name_informations] = "?",
+                [self.simple_group_trade_assistant.label_guild_informations] = DEFAULT_GUILD_TEXT,
+            [self.simple_group_trade_assistant.label_group_informations] = DEFAULT_GROUP_TEXT}--]]
+
+            --[[for f, default_text in ipairs(t) do
+                local fs = f:CreateFontString(nil, 'OVERLAY')
+                fs:FontTemplate()
+                fs:Point('CENTER')
+                fs:SetText(default_text)
+                fs:SetJustifyH('CENTER')
+                f:SetFontString(fs)
+                f.fs = fs
+            end--]]
+
+            --[[self.simple_group_trade_assistant.label_name_informations:SetText("?")
+            self.simple_group_trade_assistant.label_guild_informations:SetText(DEFAULT_GUILD_TEXT)
+            self.simple_group_trade_assistant.label_group_informations:SetText(DEFAULT_GROUP_TEXT)--]]
+
+            local fs = self.simple_group_trade_assistant.label_name_informations:CreateFontString(nil, 'OVERLAY')
+            fs:FontTemplate()
+            fs:Point('CENTER')
+            fs:SetText("?")
+            --fs:SetJustifyH('CENTER')
+            fs:SetJustifyH('LEFT')
+            self.simple_group_trade_assistant.label_name_informations:SetFontString(fs)
+            self.simple_group_trade_assistant.label_name_informations.fs = fs
+
+            local fs2 = self.simple_group_trade_assistant.label_guild_informations:CreateFontString(nil, 'OVERLAY')
+            fs2:FontTemplate()
+            fs2:Point('CENTER')
+            fs2:SetText(DEFAULT_GUILD_TEXT)
+            --fs2:SetJustifyH('CENTER')
+            fs2:SetJustifyH('LEFT')
+            self.simple_group_trade_assistant.label_guild_informations:SetFontString(fs2)
+            self.simple_group_trade_assistant.label_guild_informations.fs = fs2
+
+            local fs3 = self.simple_group_trade_assistant.label_group_informations:CreateFontString(nil, 'OVERLAY')
+            fs3:FontTemplate()
+            fs3:Point('CENTER')
+            fs3:SetText(DEFAULT_GUILD_TEXT)
+            --fs3:SetJustifyH('CENTER')
+            fs3:SetJustifyH('LEFT')
+            self.simple_group_trade_assistant.label_group_informations:SetFontString(fs3)
+            self.simple_group_trade_assistant.label_group_informations.fs = fs3
+
+            --self.simple_group_trade_assistant:AddChild(self.simple_group_trade_assistant.label_name_informations)
+            --self.simple_group_trade_assistant:AddChild(self.simple_group_trade_assistant.label_guild_informations)
+            --self.simple_group_trade_assistant:AddChild(self.simple_group_trade_assistant.label_group_informations)
+            --self.simple_group_trade_assistant:Hide()
+
             -- heavily inspired from WoWPro
-            self.trade_assistant_frame.target_button = CreateFrame("Button", "WhoTrades_targetbutton", self.trade_assistant_frame.frame, "SecureActionButtonTemplate")
-            self.trade_assistant_frame.target_button:RegisterForClicks("AnyUp")
-            self.trade_assistant_frame.target_button.SetTarget = function () self.trade_assistant_frame.target_button:SetTexture("Interface\\Icons\\Ability_Marksmanship"); end
-            self.trade_assistant_frame.target_button:SetAttribute("type", "macro")
-            self.trade_assistant_frame.target_button:SetHeight(32)
-            self.trade_assistant_frame.target_button:SetWidth(32)
-            local targeticon = self.trade_assistant_frame.target_button:CreateTexture(nil, "ARTWORK")
-            targeticon:SetWidth(36)
-            targeticon:SetHeight(36)
-            targeticon:SetTexture("Interface\\Icons\\Ability_Marksmanship")
-            targeticon:SetAllPoints(self.trade_assistant_frame.target_button)
+            --self.button_target_trader = CreateFrame("Button", "WhoTrades_targetbutton", self.simple_group_trade_assistant.frame, "SecureActionButtonTemplate")
+            if not self.button_target_trader then
+                self.button_target_trader = CreateFrame("Button", "WhoTrades_targetbutton", TradeFrame, "SecureActionButtonTemplate")
+                self.button_target_trader:RegisterForClicks("AnyUp")
+                self.button_target_trader.SetTarget = function () self.button_target_trader:SetTexture("Interface\\Icons\\Ability_Marksmanship"); end
+                self.button_target_trader:SetAttribute("type", "macro")
+                self.button_target_trader:SetHeight(32)
+                self.button_target_trader:SetWidth(32)
+                local targeticon = self.button_target_trader:CreateTexture(nil, "ARTWORK")
+                targeticon:SetWidth(36)
+                targeticon:SetHeight(36)
+                targeticon:SetTexture("Interface\\Icons\\Ability_Marksmanship")
+                targeticon:SetAllPoints(self.button_target_trader)
 
-            self.trade_assistant_frame.target_button:SetPoint("TOPLEFT", self.trade_assistant_frame.frame, "TOPRIGHT")
-            self.trade_assistant_frame.target_button:Hide()
+                --self.button_target_trader:SetPoint("TOPLEFT", self.simple_group_trade_assistant.frame, "TOPRIGHT")
+                self.button_target_trader:SetPoint("BOTTOMRIGHT", TradeFrame, "TOPRIGHT")
+            end
+            self.button_target_trader:Hide()
+            self.simple_group_trade_assistant:Hide()
 
-            self.trade_assistant_frame.name_group:AddChild(self.trade_assistant_frame.name)
-
-            --[[self.trade_assistant_frame.class_group = AceGUI:Create("InlineGroup")
-            self.trade_assistant_frame.class_group:SetLayout("Flow")
-            self.trade_assistant_frame.class_group:SetAutoAdjustHeight(true)
-            self.trade_assistant_frame.class = AceGUI:Create("Label")
-            self.trade_assistant_frame.class:SetJustifyV("CENTER")
-            self.trade_assistant_frame.class_group:AddChild(self.trade_assistant_frame.class)--]]
-
-            self.trade_assistant_frame.guild_group = AceGUI:Create("InlineGroup")
-            self.trade_assistant_frame.guild_group:SetLayout("Flow")
-            self.trade_assistant_frame.guild_group:SetAutoAdjustHeight(true)
-            self.trade_assistant_frame.guild = AceGUI:Create("Label")
-            self.trade_assistant_frame.guild_group:AddChild(self.trade_assistant_frame.guild)
-
-            self.trade_assistant_frame.group_group = AceGUI:Create("InlineGroup")
-            self.trade_assistant_frame.group_group:SetLayout("Flow")
-            self.trade_assistant_frame.group_group:SetAutoAdjustHeight(true)
-            self.trade_assistant_frame.group = AceGUI:Create("Label")
-            self.trade_assistant_frame.group_label = AceGUI:Create("Label")
-            self.trade_assistant_frame.group_label:SetText("Group / Raid")
-            self.trade_assistant_frame.group_group:AddChild(self.trade_assistant_frame.group_label)
-            self.trade_assistant_frame.group_group:AddChild(self.trade_assistant_frame.group)
-
-            self.trade_assistant_frame:AddChild(self.trade_assistant_frame.name_group)
-            --[[self.trade_assistant_frame:AddChild(self.trade_assistant_frame.class_group)--]]
-            self.trade_assistant_frame:AddChild(self.trade_assistant_frame.guild_group)
-
-            self.trade_assistant_frame:AddChild(self.trade_assistant_frame.group_group)
-            self.trade_assistant_frame:Hide()
         else
             self:Print("build_UI - trade_assistant_frame exists")
         end
@@ -323,26 +399,6 @@ end
 function WhoTrades:OnInitialize()
     -- Code that you want to run when the addon is first loaded goes here.
     self:Print("OnInitialize")
-
-    --[[    -- fill dict <class, chat texture string>
-    -- build it once and for all
-    for class_name, class_coords in pairs(CLASS_ICON_TCOORDS) do
-        -- texture_path_index[class_name] = format("|T%s:%d:0:0:0:0:0:%f:%f:%f:%f|t", class_icons_texture_path, 0, unpack(class_coords))
-        texture_path_index[class_name] = format("|T%s:0::0:0:256:256:%f:%f:%f:%f|t", class_icons_texture_path, unpack(class_coords))
-        -- self:Print(format("Class %s, coords %-3.2f,%-3.2f,%-3.2f,%-3.2f", class_name, unpack(class_coords)))
-        --self:Print(format("Class %s : %s:%d::::::%f:%f:%f:%f",class_name, class_icons_texture_path, 0, unpack(class_coords)))
-        self:Print(format("Class %s %s", class_name, texture_path_index[class_name]))
-    end--]]
-
-    -- texture_path_index[WARRIOR] = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:0:64:0:64|t"
-    -- texture_path_index[MAGE]    = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:64:128:0:64|t"
-    -- texture_path_index[ROGUE]   = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:128:196:0:64|t"
-    -- texture_path_index[DRUID]   = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:196:256:0:64|t"
-    -- texture_path_index[HUNTER]  = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:0:64:64:128|t"
-    -- texture_path_index[SHAMAN]  = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:64:128:64:128|t"
-    -- texture_path_index[PRIEST]  = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:128:196:64:128|t"
-    -- texture_path_index[WARLOCK] = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:196:256:64:128|t"
-    -- texture_path_index[PALADIN] = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:0:64:128:196|t"
 
     self.enabled = true -- get it from config
     self:ResetTraderData()
@@ -365,6 +421,7 @@ function WhoTrades:PLAYER_TARGET_CHANGED(...)
         self:Print(format("PLAYER_TARGET_CHANGED event (trading with % s, target is % s)", self.trading_with, target_name))
         if target_name == self.trading_with then
             self:Print("Trader and target are equals")
+            self:build_UI()
             self:OnShowTradeFrame()
             self:UnregisterEvent("PLAYER_TARGET_CHANGED")
         end
