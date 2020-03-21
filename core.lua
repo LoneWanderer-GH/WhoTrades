@@ -245,31 +245,11 @@ end
 function WhoTrades:OnHideTradeFrame()
     self:Print("OnHideTradeFrame")
     if self.simple_group_trade_assistant then
-        --self.simple_group_trade_assistant:Hide()
         self.button_target_trader:Hide()
         self.simple_group_trade_assistant:Hide()
         self.simple_group_trade_assistant.label_name_informations:Hide()
         self.simple_group_trade_assistant.label_guild_informations:Hide()
         self.simple_group_trade_assistant.label_group_informations:Hide()
-
-
-
-
-        --self.simple_group_trade_assistant.label_name_informations:Release()
-        --self.simple_group_trade_assistant.label_guild_informations:Release()
-        --self.simple_group_trade_assistant.label_group_informations:Release()
-
-        -- release to ACGUI frame pool
-        --self.simple_group_trade_assistant:ReleaseChildren()
-
-        --self.simple_group_trade_assistant:Release()
-
-        --[[self.simple_group_trade_assistant.label_name_informations = nil
-        self.simple_group_trade_assistant.label_guild_informations = nil
-        self.simple_group_trade_assistant.label_group_informations = nil--]]
-
-        --self.simple_group_trade_assistant = nil
-        --self.simple_group_trade_assistant.frameShown = false
     else
         if self.enabled then
             self:Print("OnHideTradeFrame - No assistant frame ?!")
@@ -286,19 +266,10 @@ function WhoTrades:build_UI()
         if not self.simple_group_trade_assistant then
             self:Print("build_UI - trade_assistant_frame does not exists, build it")
 
-            --self.simple_group_trade_assistant = AceGUI:Create("SimpleGroup")
             self.simple_group_trade_assistant = CreateFrame("frame", "WhoTrades", TradeFrame)
-            -- self.simple_group_trade_assistant:SetLayout("Flow")
-            --self.simple_group_trade_assistant:SetPoint("TOPLEFT", TradeFrame, "BOTTOMLEFT")
-            --self.simple_group_trade_assistant:SetPoint("TOP", TradeFrameRecipientNameText, "BOTTOM", 0, -10)
-            --self.simple_group_trade_assistant:SetPoint("TOPRIGHT", TradeFrameTitleBg, "BOTTOMRIGHT", 0, 0)
             self.simple_group_trade_assistant:SetPoint("TOPRIGHT", TradeFrameCloseButton, "BOTTOMRIGHT", 2, 6)
             self.simple_group_trade_assistant:SetWidth(TradeFrameRecipientNameText:GetWidth() * 2)
             self.simple_group_trade_assistant:SetHeight(TradeRecipientItem1ItemButton:GetHeight() + 5)
-
-            --self.simple_group_trade_assistant.label_name_informations = AceGUI:Create("Label")
-            --self.simple_group_trade_assistant.label_guild_informations = AceGUI:Create("Label")
-            --self.simple_group_trade_assistant.label_group_informations = AceGUI:Create("Label")
 
             self.simple_group_trade_assistant.label_name_informations = CreateFrame("Button", "WhoTrades_name", self.simple_group_trade_assistant)
             self.simple_group_trade_assistant.label_guild_informations = CreateFrame("Button", "WhoTrades_guild", self.simple_group_trade_assistant)
@@ -317,29 +288,11 @@ function WhoTrades:build_UI()
             self.simple_group_trade_assistant.label_group_informations:SetHeight(self.simple_group_trade_assistant.label_name_informations:GetHeight())
 
 
-            --[[local t = {[self.simple_group_trade_assistant.label_name_informations] = "?",
-                [self.simple_group_trade_assistant.label_guild_informations] = DEFAULT_GUILD_TEXT,
-            [self.simple_group_trade_assistant.label_group_informations] = DEFAULT_GROUP_TEXT}--]]
-
-            --[[for f, default_text in ipairs(t) do
-                local fs = f:CreateFontString(nil, 'OVERLAY')
-                fs:FontTemplate()
-                fs:Point('CENTER')
-                fs:SetText(default_text)
-                fs:SetJustifyH('CENTER')
-                f:SetFontString(fs)
-                f.fs = fs
-            end--]]
-
-            --[[self.simple_group_trade_assistant.label_name_informations:SetText("?")
-            self.simple_group_trade_assistant.label_guild_informations:SetText(DEFAULT_GUILD_TEXT)
-            self.simple_group_trade_assistant.label_group_informations:SetText(DEFAULT_GROUP_TEXT)--]]
-
             local fs = self.simple_group_trade_assistant.label_name_informations:CreateFontString(nil, 'OVERLAY')
             fs:FontTemplate()
             fs:Point('CENTER')
             fs:SetText("?")
-            --fs:SetJustifyH('CENTER')
+            --fs:SetJustifyH('CENTER')m
             fs:SetJustifyH('LEFT')
             self.simple_group_trade_assistant.label_name_informations:SetFontString(fs)
             self.simple_group_trade_assistant.label_name_informations.fs = fs
@@ -362,11 +315,6 @@ function WhoTrades:build_UI()
             self.simple_group_trade_assistant.label_group_informations:SetFontString(fs3)
             self.simple_group_trade_assistant.label_group_informations.fs = fs3
 
-            --self.simple_group_trade_assistant:AddChild(self.simple_group_trade_assistant.label_name_informations)
-            --self.simple_group_trade_assistant:AddChild(self.simple_group_trade_assistant.label_guild_informations)
-            --self.simple_group_trade_assistant:AddChild(self.simple_group_trade_assistant.label_group_informations)
-            --self.simple_group_trade_assistant:Hide()
-
             -- heavily inspired from WoWPro
             --self.button_target_trader = CreateFrame("Button", "WhoTrades_targetbutton", self.simple_group_trade_assistant.frame, "SecureActionButtonTemplate")
             if not self.button_target_trader then
@@ -382,7 +330,6 @@ function WhoTrades:build_UI()
                 targeticon:SetTexture("Interface\\Icons\\Ability_Marksmanship")
                 targeticon:SetAllPoints(self.button_target_trader)
 
-                --self.button_target_trader:SetPoint("TOPLEFT", self.simple_group_trade_assistant.frame, "TOPRIGHT")
                 self.button_target_trader:SetPoint("BOTTOMRIGHT", TradeFrame, "TOPRIGHT")
             end
             self.button_target_trader:Hide()
