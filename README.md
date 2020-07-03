@@ -10,3 +10,7 @@ Tells you who you are trading with with some details
 Download [Curse page](https://www.curseforge.com/wow/addons/whotrades)
 
 ![](Screenshots/Trade_001.png)
+
+If the addon can't find any info, it provides a Target button (inspired from WoWPro addon) that allows you to try to target the player.
+If successful, the frame will update with the correct data.
+![](Screenshots/Trade_002.png)
