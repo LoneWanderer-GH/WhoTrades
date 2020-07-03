@@ -29,7 +29,7 @@ local DEFAULT_GROUP_TEXT = "(no grouping info)"
 
 function WhoTrades:OnEnable()
     -- Called when the addon is enabled
-    self:Print("OnEnable")
+    --self:Print("OnEnable")
     self.enabled = true
     WhoTrades:RegisterEvent("TRADE_SHOW")
     WhoTrades:RegisterEvent("TRADE_CLOSED")
@@ -37,7 +37,7 @@ end
 
 function WhoTrades:OnDisable()
     -- Called when the addon is disabled
-    self:Print("OnDisable")
+    --self:Print("OnDisable")
     self.enabled = false
     WhoTrades:UnregisterEvent("TRADE_SHOW")
     WhoTrades:UnregisterEvent("TRADE_CLOSED")
@@ -103,37 +103,37 @@ function WhoTrades:get_player_infos_from_target()
 end
 
 function WhoTrades:get_player_infos()
-    self:Print("get_player_infos")
+    --self:Print("get_player_infos")
     local data_found = false
     if self.trading_with then
-        self:Print("get_player_infos - Trying to fetch from group or raid")
+        --self:Print("get_player_infos - Trying to fetch from group or raid")
         local is_in_player_raid = UnitInRaid(self.trading_with)
         local is_in_player_group = UnitInParty(self.trading_with)
         self.button_target_trader:Hide()
         if is_in_player_raid then
-            self:Print("get_player_infos - in raid !")
+            --self:Print("get_player_infos - in raid !")
             self:get_player_infos_from_raid()
             data_found = true
         elseif is_in_player_group then
-            self:Print("get_player_infos - in group !")
+            --self:Print("get_player_infos - in group !")
             self:get_player_infos_from_group()
             data_found = true
         else
-            self:Print("get_player_infos - not in raid nor group, trying from target")
+            --self:Print("get_player_infos - not in raid nor group, trying from target")
             self.button_target_trader:Show()
             if UnitIsPlayer("target") and UnitName("target") == self.trading_with then
-                self:Print("get_player_infos - got it from target")
+                --self:Print("get_player_infos - got it from target")
                 self:get_player_infos_from_target()
                 self.button_target_trader:Hide()
                 data_found = true
             else
                 data_found = false
                 self:RegisterEvent("PLAYER_TARGET_CHANGED")
-                self:Print(format("Trader (%s) is not in target, group or raid. Cannot fetch info. Please try to target it manually", self.trading_with))
+                --self:Print(format("Trader (%s) is not in target, group or raid. Cannot fetch info. Please try to target it manually", self.trading_with))
             end
         end
     else
-        self:Print("Trader is nil ????")
+        --self:Print("Trader is nil ????")
     end
     return data_found
 end
@@ -202,9 +202,9 @@ function WhoTrades:ResetTraderData()
 end
 
 function WhoTrades:OnShowTradeFrame()
-    self:Print("OnShowTradeFrame")
+    --self:Print("OnShowTradeFrame")
     if self.simple_group_trade_assistant then
-        self:Print("OnShowTradeFrame - addon frame exists")
+        --self:Print("OnShowTradeFrame - addon frame exists")
 
         if self.trading_with then
             --
@@ -235,15 +235,15 @@ function WhoTrades:OnShowTradeFrame()
             self.simple_group_trade_assistant.label_group_informations:Show()
             self.simple_group_trade_assistant:Show()
         else
-            self:Print("OnShowTradeFrame - Trading with undefined ?! (recipient text is: "..TradeFrameRecipientNameText:GetText() .. ")")
+            --self:Print("OnShowTradeFrame - Trading with undefined ?! (recipient text is: "..TradeFrameRecipientNameText:GetText() .. ")")
         end
     else
-        self:Print("OnShowTradeFrame - No assitant frame ?!")
+        --self:Print("OnShowTradeFrame - No assitant frame ?!")
     end
 end
 
 function WhoTrades:OnHideTradeFrame()
-    self:Print("OnHideTradeFrame")
+    --self:Print("OnHideTradeFrame")
     if self.simple_group_trade_assistant then
         self.button_target_trader:Hide()
         self.simple_group_trade_assistant:Hide()
@@ -252,19 +252,19 @@ function WhoTrades:OnHideTradeFrame()
         self.simple_group_trade_assistant.label_group_informations:Hide()
     else
         if self.enabled then
-            self:Print("OnHideTradeFrame - No assistant frame ?!")
+            --self:Print("OnHideTradeFrame - No assistant frame ?!")
         else
-            self:Print("OnHideTradeFrame - Addon is disabled, doing nothing")
+            --self:Print("OnHideTradeFrame - Addon is disabled, doing nothing")
         end
     end
 end
 
 function WhoTrades:build_UI()
-    self:Print("build_UI")
+    --self:Print("build_UI")
     if TradeFrame then
-        self:Print("build_UI - WOW TradeFrame exists")
+        --self:Print("build_UI - WOW TradeFrame exists")
         if not self.simple_group_trade_assistant then
-            self:Print("build_UI - trade_assistant_frame does not exists, build it")
+            --self:Print("build_UI - trade_assistant_frame does not exists, build it")
 
             self.simple_group_trade_assistant = CreateFrame("frame", "WhoTrades", TradeFrame)
             self.simple_group_trade_assistant:SetPoint("TOPRIGHT", TradeFrameCloseButton, "BOTTOMRIGHT", 2, 6)
@@ -336,16 +336,16 @@ function WhoTrades:build_UI()
             self.simple_group_trade_assistant:Hide()
 
         else
-            self:Print("build_UI - trade_assistant_frame exists")
+            --self:Print("build_UI - trade_assistant_frame exists")
         end
     else
-        self:Print("build_UI - WOW TradeFrame does not exists")
+        --self:Print("build_UI - WOW TradeFrame does not exists")
     end
 end
 
 function WhoTrades:OnInitialize()
     -- Code that you want to run when the addon is first loaded goes here.
-    self:Print("OnInitialize")
+    --self:Print("OnInitialize")
 
     self.enabled = true -- get it from config
     self:ResetTraderData()
@@ -355,30 +355,30 @@ function WhoTrades:OnInitialize()
 end
 
 function WhoTrades:TRADE_SHOW(...)
-    self:Print("TRADE_SHOW event")
+    --self:Print("TRADE_SHOW event")
     self.trading_with = TradeFrameRecipientNameText:GetText()
     self:build_UI()
     self:OnShowTradeFrame()
 end
 
 function WhoTrades:PLAYER_TARGET_CHANGED(...)
-    self:Print("PLAYER_TARGET_CHANGED event")
+    --self:Print("PLAYER_TARGET_CHANGED event")
     if self.trading_with then
         local target_name = UnitName("target")
-        self:Print(format("PLAYER_TARGET_CHANGED event (trading with % s, target is % s)", self.trading_with, target_name))
+        --self:Print(format("PLAYER_TARGET_CHANGED event (trading with % s, target is % s)", self.trading_with, target_name))
         if target_name == self.trading_with then
-            self:Print("Trader and target are equals")
+            --self:Print("Trader and target are equals")
             self:build_UI()
             self:OnShowTradeFrame()
             self:UnregisterEvent("PLAYER_TARGET_CHANGED")
         end
     else
-        self:Print("PLAYER_TARGET_CHANGED event (trading with NOONE ????)")
+        --self:Print("PLAYER_TARGET_CHANGED event (trading with NOONE ????)")
     end
 end
 
 function WhoTrades:TRADE_CLOSED(...)
-    self:Print("TRADE_CLOSED event")
+    --self:Print("TRADE_CLOSED event")
     self:UnregisterEvent("PLAYER_TARGET_CHANGED")
     self.trading_with = nil
     self:OnHideTradeFrame()
