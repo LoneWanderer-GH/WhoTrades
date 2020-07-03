@@ -11,7 +11,7 @@
 
 ## Author: LoneWanderer-GH
 
-## X-Curse-Project-ID: TBD
+## X-Curse-Project-ID: 393487
 
 ## SavedVariables: WhoTradesDB
 ## SavedVariablesPerCharacter: WhoTradesCharDB
