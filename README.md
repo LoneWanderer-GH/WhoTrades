@@ -1,4 +1,4 @@
-# WhoTrades (for retail, classic and ElvUI_CoolLine_Wrapper compatible)
+# WhoTrades (for retail & classic)
 
 [![](http://cf.way2muchnoise.eu/title/393487.svg)](https://www.curseforge.com/wow/addons/whotrades)
 [![](http://cf.way2muchnoise.eu/versions/393487.svg)](https://www.curseforge.com/wow/addons/whotrades)
