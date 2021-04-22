@@ -14,23 +14,16 @@ jobs:
 
     - uses: actions/checkout@v1
 
-    - name: Set env with Curse Forge API key
-      shell: bash
-      run: sudo echo "::set-env name=CF_API_KEY::${{ secrets.CF_API_KEY }}"
+    - uses: BigWigsMods/packager@master
+      name: Build Retail and upload to CurseForge
+      with:
+        args: -l -g retail
 
-    - name: Store Curse Forge API key into a .env file
-      shell: bash
-      run: sudo echo "CF_API_KEY=${CF_API_KEY}" > ./.env && ls -al
-      working-directory: ./.release
+    - uses: BigWigsMods/packager@master
+      name: Build Classic and upload to CurseForge
+      with:
+        args: -l -g classic
 
-    - name: Build Retail
-      run: sudo bash ./release.sh -l
-      shell: bash
-      working-directory: ./.release
-
-    - name: Build Classic
-      run: sudo bash ./release.sh -l -g 1.13.3
-      shell: bash
-      working-directory: ./.release
-
+    env:
+      CF_API_KEY: ${{ secrets.CF_API_KEY }}
 

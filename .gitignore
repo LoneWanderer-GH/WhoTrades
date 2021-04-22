@@ -1,3 +1,12 @@
 Libs
 sublime*
 *.tmp*
+.idea/workspace.xml
+
+WhoTrades.iml
+
+.idea/vcs.xml
+
+.idea/modules.xml
+
+.idea/misc.xml
