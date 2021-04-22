@@ -4,11 +4,7 @@ on:
   push:
     branches:
       - 'feature/**'
-#        branches-ignore:
-#            - 'main'
-#            - 'master'
-#            - 'releases/**'
-#            - 'release/**'
+      - 'hotfix/**'
 
 jobs:
   build-classic:
