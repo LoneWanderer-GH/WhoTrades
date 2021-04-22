@@ -1,7 +1,4 @@
-#@debug@
 ## Interface: 11307
-#@end-debug@
-
 ## Interface-Retail: 90005
 ## Interface-Classic: 11307
 

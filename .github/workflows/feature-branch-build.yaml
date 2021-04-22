@@ -29,7 +29,7 @@ jobs:
           args: -r ./zip -z -d -g classic
 
       - name: Name artifact with git hash
-        run: echo 'ARTIFACT_NAME=${{ github.event.repository.name }}-'$(git -C ./zip show --no-patch --format="%H") >> $GITHUB_ENV
+        run: echo 'ARTIFACT_NAME=Classic-${{ github.event.repository.name }}-'$(git -C ./zip show --no-patch --format="%H") >> $GITHUB_ENV
 
       - name: Store built zip
         uses: actions/upload-artifact@v2
@@ -71,7 +71,7 @@ jobs:
           args: -r ./zip -z -d -g retail
 
       - name: Name artifact with git hash
-        run: echo 'ARTIFACT_NAME=${{ github.event.repository.name }}-'$(git -C ./zip show --no-patch --format="%H") >> $GITHUB_ENV
+        run: echo 'ARTIFACT_NAME=Retail-${{ github.event.repository.name }}-'$(git -C ./zip show --no-patch --format="%H") >> $GITHUB_ENV
 
       - name: Store built zip
         uses: actions/upload-artifact@v2
