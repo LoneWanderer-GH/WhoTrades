@@ -1,0 +1,3 @@
+[submodule "addon-tooling"]
+	path = addon-tooling
+	url = https://github.com/LoneWanderer-GH/WoWAddonTooling.git

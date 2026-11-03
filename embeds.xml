@@ -3,7 +3,7 @@
   <!--<Script file="Libs\LibWho-2.0\LibWho-2.0.lua" />-->
 
   <Include file="Libs\AceEvent-3.0\AceEvent-3.0.xml" />
-  <!--<Include file="Libs\AceGUI-3.0\AceGUI-3.0.xml" />-->
+  <Include file="Libs\AceGUI-3.0\AceGUI-3.0.xml" />
   <!--<Include file="Libs\AceHook-3.0\AceHook-3.0.xml" />-->
   <!--<Include file="Libs\AceLocale-3.0\AceLocale-3.0.xml" />-->
   <!--<Include file="Libs\AceSerializer-3.0\AceSerializer-3.0.xml" />-->

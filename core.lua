@@ -1,6 +1,8 @@
 local WhoTrades = LibStub("AceAddon-3.0"):NewAddon("WhoTrades", "AceEvent-3.0", "AceConsole-3.0")
 local AceGUI = LibStub("AceGUI-3.0")
+local _G = _G
 _G["WhoTrades"] = WhoTrades
+local WOW_PROJECT_ID,WOW_PROJECT_MAINLINE,WOW_PROJECT_CLASSIC = WOW_PROJECT_ID, WOW_PROJECT_MAINLINE, WOW_PROJECT_CLASSIC
 local TradeFrame = TradeFrame
 local TradeFrameRecipientNameText = TradeFrameRecipientNameText
 local pairs, format, unpack, print = pairs, format, unpack, print
@@ -270,9 +272,9 @@ function WhoTrades:build_UI()
             self.simple_group_trade_assistant:SetWidth(TradeFrameRecipientNameText:GetWidth() * 2)
             self.simple_group_trade_assistant:SetHeight(TradeRecipientItem1ItemButton:GetHeight() + 5)
 
-            self.simple_group_trade_assistant.label_name_informations = CreateFrame("Button", "WhoTrades_name", self.simple_group_trade_assistant)
-            self.simple_group_trade_assistant.label_guild_informations = CreateFrame("Button", "WhoTrades_guild", self.simple_group_trade_assistant)
-            self.simple_group_trade_assistant.label_group_informations = CreateFrame("Button", "WhoTrades_group", self.simple_group_trade_assistant)
+            self.simple_group_trade_assistant.label_name_informations = CreateFrame("Frame", "WhoTrades_name", self.simple_group_trade_assistant)
+            self.simple_group_trade_assistant.label_guild_informations = CreateFrame("Frame", "WhoTrades_guild", self.simple_group_trade_assistant)
+            self.simple_group_trade_assistant.label_group_informations = CreateFrame("Frame", "WhoTrades_group", self.simple_group_trade_assistant)
 
             self.simple_group_trade_assistant.label_name_informations:SetPoint("TOPRIGHT", TradeFrameCloseButton, "BOTTOMRIGHT", 0,0)
             self.simple_group_trade_assistant.label_name_informations:SetWidth(TradeFrameRecipientNameText:GetWidth() * 2)
@@ -286,34 +288,58 @@ function WhoTrades:build_UI()
             self.simple_group_trade_assistant.label_group_informations:SetWidth(self.simple_group_trade_assistant.label_name_informations:GetWidth())
             self.simple_group_trade_assistant.label_group_informations:SetHeight(self.simple_group_trade_assistant.label_name_informations:GetHeight())
 
-
-            local fs = self.simple_group_trade_assistant.label_name_informations:CreateFontString(nil, 'OVERLAY')
-            fs:FontTemplate()
-            fs:Point('CENTER')
+            --------------------------
+            -- label_name_informations
+            local fs = self.simple_group_trade_assistant.label_name_informations:CreateFontString(nil, 'OVERLAY', "GameFontHighlight")
+            assert(fs, "CreateFontString returned nil ")
+            if fs.FontTemplate then
+                fs:FontTemplate()
+            end
+            -- fs:Point('CENTER')
+            fs:SetPoint('CENTER', self.simple_group_trade_assistant.label_name_informations, 'CENTER', 0, 0)
             fs:SetText("?")
-            --fs:SetJustifyH('CENTER')m
+            --fs:SetJustifyH('CENTER')
             fs:SetJustifyH('LEFT')
-            self.simple_group_trade_assistant.label_name_informations:SetFontString(fs)
+            if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then
+                self.simple_group_trade_assistant.label_name_informations:SetFontString(fs)
+            end
             self.simple_group_trade_assistant.label_name_informations.fs = fs
-
-            local fs2 = self.simple_group_trade_assistant.label_guild_informations:CreateFontString(nil, 'OVERLAY')
-            fs2:FontTemplate()
-            fs2:Point('CENTER')
-            fs2:SetText(DEFAULT_GUILD_TEXT)
-            --fs2:SetJustifyH('CENTER')
-            fs2:SetJustifyH('LEFT')
-            self.simple_group_trade_assistant.label_guild_informations:SetFontString(fs2)
-            self.simple_group_trade_assistant.label_guild_informations.fs = fs2
-
-            local fs3 = self.simple_group_trade_assistant.label_group_informations:CreateFontString(nil, 'OVERLAY')
-            fs3:FontTemplate()
-            fs3:Point('CENTER')
-            fs3:SetText(DEFAULT_GUILD_TEXT)
-            --fs3:SetJustifyH('CENTER')
-            fs3:SetJustifyH('LEFT')
-            self.simple_group_trade_assistant.label_group_informations:SetFontString(fs3)
-            self.simple_group_trade_assistant.label_group_informations.fs = fs3
-
+            
+            ---------------------------
+            -- label_guild_informations
+            do
+                local fs2 = self.simple_group_trade_assistant.label_guild_informations:CreateFontString(nil, 'OVERLAY', "GameFontHighlight")
+                if fs2.FontTemplate then
+                    fs2:FontTemplate()
+                end
+                -- fs2:Point('CENTER')
+                fs2:SetPoint('CENTER', self.simple_group_trade_assistant.label_guild_informations, 'CENTER', 0, 0)
+                fs2:SetText(DEFAULT_GUILD_TEXT)
+                --fs2:SetJustifyH('CENTER')
+                fs2:SetJustifyH('LEFT')
+                if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then
+                    self.simple_group_trade_assistant.label_guild_informations:SetFontString(fs2)
+                end
+                self.simple_group_trade_assistant.label_guild_informations.fs = fs2
+            end
+            
+            ---------------------------
+            -- label_group_informations
+            do
+                local fs3 = self.simple_group_trade_assistant.label_group_informations:CreateFontString(nil, 'OVERLAY', "GameFontHighlight")
+                if fs3.FontTemplate then
+                    fs3:FontTemplate()
+                end
+                -- fs3:Point('CENTER')
+                fs3:SetPoint('CENTER', self.simple_group_trade_assistant.label_group_informations, 'CENTER', 0, 0)
+                fs3:SetText(DEFAULT_GROUP_TEXT)
+                --fs3:SetJustifyH('CENTER')
+                fs3:SetJustifyH('LEFT')
+                if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then
+                    self.simple_group_trade_assistant.label_group_informations:SetFontString(fs3)
+                end
+                self.simple_group_trade_assistant.label_group_informations.fs = fs3
+            end
             -- heavily inspired from WoWPro
             --self.button_target_trader = CreateFrame("Button", "WhoTrades_targetbutton", self.simple_group_trade_assistant.frame, "SecureActionButtonTemplate")
             if not self.button_target_trader then
