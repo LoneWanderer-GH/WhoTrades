@@ -2,31 +2,65 @@ local WhoTrades = LibStub("AceAddon-3.0"):NewAddon("WhoTrades", "AceEvent-3.0", 
 local AceGUI = LibStub("AceGUI-3.0")
 local _G = _G
 _G["WhoTrades"] = WhoTrades
-local WOW_PROJECT_ID,WOW_PROJECT_MAINLINE,WOW_PROJECT_CLASSIC = WOW_PROJECT_ID, WOW_PROJECT_MAINLINE, WOW_PROJECT_CLASSIC
 local TradeFrame = TradeFrame
 local TradeFrameRecipientNameText = TradeFrameRecipientNameText
 local pairs, format, unpack, print = pairs, format, unpack, print
-local RAID_CLASS_COLORS, CLASS_ICON_TCOORDS = RAID_CLASS_COLORS, CLASS_ICON_TCOORDS
+local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 local CreateFrame = CreateFrame
 local _, UnitClass, UnitName, UnitLevel, UnitIsPlayer = UnitClassBase, UnitClass, UnitName, UnitLevel, UnitIsPlayer
 local _, GetGuildInfo = UnitIsInMyGuild, GetGuildInfo
-local UnitInParty, _, UnitInRaid, _, GetRaidRosterInfo = UnitInParty, UnitInOtherParty, UnitInRaid, IsInRaid, GetRaidRosterInfo
-local WARRIOR, MAGE, ROGUE, DRUID, HUNTER, SHAMAN, PRIEST, WARLOCK, PALADIN = "WARRIOR", "MAGE", "ROGUE", "DRUID", "HUNTER", "SHAMAN", "PRIEST", "WARLOCK", "PALADIN"
+local GetRaidRosterInfo = GetRaidRosterInfo
+local floor = math.floor
+local CLASS_ICON_TCOORDS = CLASS_ICON_TCOORDS
 
-local texture_path_index = {
-    [WARRIOR] = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:0:64:0:64|t",
-    [MAGE]    = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:64:128:0:64|t",
-    [ROGUE]   = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:128:196:0:64|t",
-    [DRUID]   = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:196:256:0:64|t",
-    [HUNTER]  = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:0:64:64:128|t",
-    [SHAMAN]  = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:64:128:64:128|t",
-    [PRIEST]  = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:128:196:64:128|t",
-    [WARLOCK] = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:196:256:64:128|t",
-    [PALADIN] = "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:0:64:128:196|t",
-}
+local texture_path_index = {}
+if CLASS_ICON_TCOORDS then
+    for class_name, coords in pairs(CLASS_ICON_TCOORDS) do
+        if coords[1] and coords[2] and coords[3] and coords[4] then
+            texture_path_index[class_name] = format(
+                "|TInterface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes:14:14:0:0:256:256:%d:%d:%d:%d|t",
+                floor(coords[1] * 256 + 0.5),
+                floor(coords[2] * 256 + 0.5),
+                floor(coords[3] * 256 + 0.5),
+                floor(coords[4] * 256 + 0.5)
+            )
+        end
+    end
+end
 
 local DEFAULT_GUILD_TEXT = "(no guild info)"
 local DEFAULT_GROUP_TEXT = "(no grouping info)"
+
+local function create_information_label(parent, name, text)
+    local label = CreateFrame("Frame", name, parent)
+    local font_string = label:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    font_string:SetPoint("CENTER", label, "CENTER", 0, 0)
+    font_string:SetText(text)
+    font_string:SetJustifyH("LEFT")
+    label.fs = font_string
+    return label
+end
+
+local function find_group_member(name)
+    local function matches_unit(unit_id)
+        local unit_name, realm_name = UnitName(unit_id)
+        return unit_name == name or (realm_name and name == unit_name .. "-" .. realm_name)
+    end
+
+    for raid_index = 1, 40 do
+        local unit_id = "raid" .. raid_index
+        if matches_unit(unit_id) then
+            return unit_id, raid_index, "Raid"
+        end
+    end
+
+    for party_index = 1, 4 do
+        local unit_id = "party" .. party_index
+        if matches_unit(unit_id) then
+            return unit_id, nil, "Party"
+        end
+    end
+end
 
 function WhoTrades:OnEnable()
     -- Called when the addon is enabled
@@ -45,15 +79,8 @@ function WhoTrades:OnDisable()
     WhoTrades:UnregisterEvent("PLAYER_TARGET_CHANGED")
 end
 
-function WhoTrades:get_player_infos_from_group()
-    local unit_id = nil
-    for _, v in ipairs{"party1", "party2", "party3", "party4"} do
-        if UnitName(v) == self.trading_with then
-            unit_id = v
-            break
-        end
-    end
-    local localized_class, class_name, _ --[[classIndex]] = UnitClass(unit_id)
+function WhoTrades:get_player_infos_from_group(unit_id)
+    local localized_class, class_name = UnitClass(unit_id)
     local level = UnitLevel(unit_id)
     local rank, group_number = nil, nil
     local guild_name, guild_rank_text, guild_rank_nb = GetGuildInfo(unit_id)
@@ -69,11 +96,10 @@ function WhoTrades:get_player_infos_from_group()
     self.trader_group_kind = "Party"
 end
 
-function WhoTrades:get_player_infos_from_raid()
-    local raid_index = UnitInRaid(self.trading_with)
+function WhoTrades:get_player_infos_from_raid(raid_index, unit_id)
     -- luacheck: ignore zone online isDead role isML -- save for future use ?
     local name, rank, group_number, level, localized_class, class_name, zone, online, isDead, role, isML = GetRaidRosterInfo(raid_index)
-    local guild_name, guild_rank_text, guild_rank_nb = GetGuildInfo(self.trading_with)
+    local guild_name, guild_rank_text, guild_rank_nb = GetGuildInfo(unit_id)
     self.trader_name = name
     self.trader_rank = rank
     self.trader_level = level
@@ -108,16 +134,15 @@ function WhoTrades:get_player_infos()
     local data_found = false
     if self.trading_with then
         --self:Print("get_player_infos - Trying to fetch from group or raid")
-        local is_in_player_raid = UnitInRaid(self.trading_with)
-        local is_in_player_group = UnitInParty(self.trading_with)
+        local group_unit, raid_index, group_kind = find_group_member(self.trading_with)
         self.button_target_trader:Hide()
-        if is_in_player_raid then
+        if group_unit and group_kind == "Raid" then
             --self:Print("get_player_infos - in raid !")
-            self:get_player_infos_from_raid()
+            self:get_player_infos_from_raid(raid_index, group_unit)
             data_found = true
-        elseif is_in_player_group then
+        elseif group_unit then
             --self:Print("get_player_infos - in group !")
-            self:get_player_infos_from_group()
+            self:get_player_infos_from_group(group_unit)
             data_found = true
         else
             --self:Print("get_player_infos - not in raid nor group, trying from target")
@@ -141,8 +166,20 @@ end
 
 local function build_class_color_str(class_name)
     local class_color_str = "|r"
-    if class_name then
-        class_color_str = format("|c%s", RAID_CLASS_COLORS[class_name].colorStr)
+    local class_color = class_name and RAID_CLASS_COLORS[class_name]
+    if class_color then
+        local color_str = class_color.colorStr
+        if not color_str and class_color.r and class_color.g and class_color.b then
+            color_str = format(
+                "ff%02x%02x%02x",
+                floor(class_color.r * 255 + 0.5),
+                floor(class_color.g * 255 + 0.5),
+                floor(class_color.b * 255 + 0.5)
+            )
+        end
+        if color_str then
+            class_color_str = format("|c%s", color_str)
+        end
     end
     return class_color_str
 end
@@ -221,7 +258,7 @@ function WhoTrades:OnShowTradeFrame()
                 local class_color_str = build_class_color_str(self.trader_class_name)
                 local level_str = build_level_str(self.trader_level)
                 local name_str = build_name_str(self.trading_with, class_color_str)
-                local texture_path_str = texture_path_index[self.trader_class_name] or "shit !"-- build_class_texture_path(self.trader_class_name)
+                local texture_path_str = texture_path_index[self.trader_class_name] or "|TInterface\\Icons\\INV_Misc_QuestionMark:14|t"
                 full_trader_str = format("%s %s %s %s", level_str, texture_path_str, name_str, self.trader_class_name)
                 guild_str = build_guild_str(self.trader_guild_name, self.trader_guild_rank_text, self.trader_guild_rank_nb)
                 grouping_str = build_grouping_status_str(self.trader_group_kind, self.trader_group_number)
@@ -272,9 +309,21 @@ function WhoTrades:build_UI()
             self.simple_group_trade_assistant:SetWidth(TradeFrameRecipientNameText:GetWidth() * 2)
             self.simple_group_trade_assistant:SetHeight(TradeRecipientItem1ItemButton:GetHeight() + 5)
 
-            self.simple_group_trade_assistant.label_name_informations = CreateFrame("Frame", "WhoTrades_name", self.simple_group_trade_assistant)
-            self.simple_group_trade_assistant.label_guild_informations = CreateFrame("Frame", "WhoTrades_guild", self.simple_group_trade_assistant)
-            self.simple_group_trade_assistant.label_group_informations = CreateFrame("Frame", "WhoTrades_group", self.simple_group_trade_assistant)
+            self.simple_group_trade_assistant.label_name_informations = create_information_label(
+                self.simple_group_trade_assistant,
+                "WhoTrades_name",
+                "?"
+            )
+            self.simple_group_trade_assistant.label_guild_informations = create_information_label(
+                self.simple_group_trade_assistant,
+                "WhoTrades_guild",
+                DEFAULT_GUILD_TEXT
+            )
+            self.simple_group_trade_assistant.label_group_informations = create_information_label(
+                self.simple_group_trade_assistant,
+                "WhoTrades_group",
+                DEFAULT_GROUP_TEXT
+            )
 
             self.simple_group_trade_assistant.label_name_informations:SetPoint("TOPRIGHT", TradeFrameCloseButton, "BOTTOMRIGHT", 0,0)
             self.simple_group_trade_assistant.label_name_informations:SetWidth(TradeFrameRecipientNameText:GetWidth() * 2)
@@ -288,58 +337,6 @@ function WhoTrades:build_UI()
             self.simple_group_trade_assistant.label_group_informations:SetWidth(self.simple_group_trade_assistant.label_name_informations:GetWidth())
             self.simple_group_trade_assistant.label_group_informations:SetHeight(self.simple_group_trade_assistant.label_name_informations:GetHeight())
 
-            --------------------------
-            -- label_name_informations
-            local fs = self.simple_group_trade_assistant.label_name_informations:CreateFontString(nil, 'OVERLAY', "GameFontHighlight")
-            assert(fs, "CreateFontString returned nil ")
-            if fs.FontTemplate then
-                fs:FontTemplate()
-            end
-            -- fs:Point('CENTER')
-            fs:SetPoint('CENTER', self.simple_group_trade_assistant.label_name_informations, 'CENTER', 0, 0)
-            fs:SetText("?")
-            --fs:SetJustifyH('CENTER')
-            fs:SetJustifyH('LEFT')
-            if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then
-                self.simple_group_trade_assistant.label_name_informations:SetFontString(fs)
-            end
-            self.simple_group_trade_assistant.label_name_informations.fs = fs
-            
-            ---------------------------
-            -- label_guild_informations
-            do
-                local fs2 = self.simple_group_trade_assistant.label_guild_informations:CreateFontString(nil, 'OVERLAY', "GameFontHighlight")
-                if fs2.FontTemplate then
-                    fs2:FontTemplate()
-                end
-                -- fs2:Point('CENTER')
-                fs2:SetPoint('CENTER', self.simple_group_trade_assistant.label_guild_informations, 'CENTER', 0, 0)
-                fs2:SetText(DEFAULT_GUILD_TEXT)
-                --fs2:SetJustifyH('CENTER')
-                fs2:SetJustifyH('LEFT')
-                if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then
-                    self.simple_group_trade_assistant.label_guild_informations:SetFontString(fs2)
-                end
-                self.simple_group_trade_assistant.label_guild_informations.fs = fs2
-            end
-            
-            ---------------------------
-            -- label_group_informations
-            do
-                local fs3 = self.simple_group_trade_assistant.label_group_informations:CreateFontString(nil, 'OVERLAY', "GameFontHighlight")
-                if fs3.FontTemplate then
-                    fs3:FontTemplate()
-                end
-                -- fs3:Point('CENTER')
-                fs3:SetPoint('CENTER', self.simple_group_trade_assistant.label_group_informations, 'CENTER', 0, 0)
-                fs3:SetText(DEFAULT_GROUP_TEXT)
-                --fs3:SetJustifyH('CENTER')
-                fs3:SetJustifyH('LEFT')
-                if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then
-                    self.simple_group_trade_assistant.label_group_informations:SetFontString(fs3)
-                end
-                self.simple_group_trade_assistant.label_group_informations.fs = fs3
-            end
             -- heavily inspired from WoWPro
             --self.button_target_trader = CreateFrame("Button", "WhoTrades_targetbutton", self.simple_group_trade_assistant.frame, "SecureActionButtonTemplate")
             if not self.button_target_trader then

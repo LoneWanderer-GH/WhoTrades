@@ -7,6 +7,8 @@
 # ## Interface-Cata   : 40402
 ## Interface-Mists: 50504
 # Interface: 120105, 11509, 20506, 16001, 30405, 40402, 50504
+## Category: Trade
+## IconTexture: Interface\Icons\INV_Misc_Coin_01
 ## X-WoWAddonTooling-Targets: retail, classic, bcc, mists, forever
 
 ## Version: @project-version@
